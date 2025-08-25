@@ -8,7 +8,12 @@
 */
 
 import router from '@adonisjs/core/services/router'
-import AuthController from '#controllers/auth_controller'
+import AuthController from '#controllers/Http/auth_controller'
+import UploadsController from '#controllers/Http/UploadsController'
+import QuizController from '#controllers/Http/QuizController'
+import SummaryController from '#controllers/Http/SummaryController'
+import FlashcardsController from '#controllers/Http/FlashcardController'
+
 import { middleware } from './kernel.js'
 
 router.get('/', async () => {
@@ -25,28 +30,21 @@ router.group(() => {
   router.get('/me', [AuthController, "me"]).use(middleware.auth({
     guards: ["api"]
   }))
-}).prefix('api/auth')
+}).prefix('/api/auth');
 
-// Groupe de routes protégées
-router.group(() => {
-  // send file
-  router.group(() => {
-    router.post('/upload', () => { })
-  }).prefix('api/file')
-  // generate quiz
-  router.group(() => {
-    router.post('/generate-quiz', () => { })
-  }).prefix('api/quiz')
-  // generate flashcards
-  router.group(() => {
-    router.post('/generate-flashcards', () => { })
-  }).prefix('api/flashcards')
-  // generate summary
-  router.group(() => {
-    router.post('/generate-summary', () => { })
-  }).prefix('api/summary')
-})
-  .use(middleware.auth({
-    guards: ['api'],
-  }))
-  .prefix('api')
+// Route upload protégée
+router.post('/api/file/upload', [UploadsController,'store'])
+  .use(middleware.auth({ guards: ['api'] }));
+
+// Route quiz protégée
+router.post('/api/quiz/generate', [QuizController, 'generate'])
+  .use(middleware.auth({ guards: ['api'] }));
+
+// Route flashcards protégée
+router.post('/api/flashcards/generate', [FlashcardsController, 'generate'])
+  .use(middleware.auth({ guards: ['api'] }));
+
+// Route summary protégée
+router.post('/api/summary/generate', [SummaryController, 'generate'])
+  .use(middleware.auth({ guards: ['api'] }))
+
