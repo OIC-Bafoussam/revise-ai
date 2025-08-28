@@ -15,6 +15,7 @@
       "#exceptions/*": ["app/exceptions/*"],
       "@ioc:Adonis/Core/*": ["node_modules/@adonisjs/core/build/*"],
       "@ioc:Adonis/Lucid/*": ["node_modules/@adonisjs/lucid/build/src/*"],
+      "#services/*": ["app/services"],
       "@ioc:*": ["./.adonisrc.json"]
     },
     "esModuleInterop": true,
