@@ -1,58 +1,56 @@
-'use client';
-
-import { useState } from 'react';
+import React from 'react';
 import "@/app/page"
 
-// Composant de la barre de progression
-// Il reçoit une valeur 'progress' en tant que prop et l'affiche.
-function ProgressBar({ progress }) {
-  return (
-    <div className="my-8 px-4 md:px-20">
-      <div className="w-full bg-gray-200 rounded-full h-4">
-        <div
-          className="bg-blue-600 h-4 rounded-full transition-all duration-500 ease-in-out"
-          style={{ width: `${progress}%` }}
-        ></div>
+// Composant ProgressBar pour la section "Comment ça marche ?"
+
+// Dans un projet réel, vous utiliseriez des icônes ou des images importées.
+// Par exemple : import iconCreate from '@/public/assets/icon-create.svg';
+
+// Pour la prévisualisation, nous utilisons des emojis pour les icônes.
+const iconCreate = '✍️';
+const iconStudy = '🧠';
+const iconQuiz = '✅';
+
+const StepCard = ({ icon, title, description }: { icon: string; title: string; description: string }) => (
+  <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-lg transform transition-transform hover:scale-105">
+    <div className="text-4xl mb-4 p-4 bg-blue-100 rounded-full">
+      {icon}
+    </div>
+    <h3 className="text-xl font-bold text-gray-800 mb-2">{title}</h3>
+    <p className="text-gray-600">{description}</p>
+  </div>
+);
+
+const HowItWorks = () => (
+  <section id="how-it-works" className="py-20 bg-gray-50">
+    <div className="container mx-auto px-4 md:px-8">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-extrabold text-gray-800 mb-4">
+          Comment Revise-IA peut vous aider
+        </h2>
+        <p className="text-lg text-gray-600">
+          Suivez ces étapes simples pour transformer votre façon d'étudier.
+        </p>
       </div>
-      <p className="text-center mt-2 text-gray-600">{progress}%</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <StepCard
+          icon={iconCreate}
+          title=" Créez"
+          description="Transformez vos cours ou documents en fiches de révision intelligentes en un instant grâce à l'IA."
+        />
+        <StepCard
+          icon={iconStudy}
+          title=" Étudiez"
+          description="Utilisez le système de répétition espacée de l'IA pour mémoriser durablement, sans effort."
+        />
+        <StepCard
+          icon={iconQuiz}
+          title="Testez"
+          description="Passez des quiz personnalisés et suivez votre progression pour maîtriser parfaitement chaque sujet."
+        />
+      </div>
     </div>
-  );
-}
+  </section>
+);
 
-// Composant parent qui gère l'état et le bouton
-// C'est ici que la logique se trouve.
-export default function App() {
-  // Déclare l'état 'progress' et sa fonction de mise à jour 'setProgress'
-  const [progress, setProgress] = useState(0);
-
-  // Fonction pour incrémenter la valeur de la progression
-  const handleProgressIncrement = () => {
-    setProgress((prevProgress) => {
-      // S'assure que la progression ne dépasse pas 100%
-      if (prevProgress + 10 > 100) {
-        return 100;
-      }
-      return prevProgress + 10;
-    });
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-8">
-      <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">
-        Exemple de barre de progression
-      </h2>
-      
-      {/* Affiche le composant ProgressBar en lui passant la valeur de l'état */}
-      <ProgressBar progress={progress} />
-      
-      {/* Bouton pour déclencher la mise à jour de l'état */}
-      <button
-        onClick={handleProgressIncrement}
-        className="mt-4 py-2 px-6 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors"
-      >
-        Augmenter la progression
-      </button>
-    </div>
-  );
-}
-
+export default HowItWorks;

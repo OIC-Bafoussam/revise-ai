@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { Send, Bot, User, GraduationCap, Loader } from "lucide-react";
 import "@/app/page"
 
-
-
 // Définition de l'interface pour un message dans le chat
 interface Message {
   id: number;
@@ -25,7 +23,7 @@ export default function GroupChatPage() {
 
   // Fonction pour envoyer le message de l'utilisateur
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     // Ajoute immédiatement le message de l'étudiant à la liste
     const newMessage: Message = {
@@ -35,7 +33,7 @@ export default function GroupChatPage() {
     };
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInput("");
-    
+
     // Simule la réponse de l'IA après un court délai
     setIsTyping(true);
     await generateAiResponse(input);
@@ -55,13 +53,12 @@ export default function GroupChatPage() {
       { role: "model", parts: [{ text: "Bien sûr, je suis prêt à aider." }] },
       { role: "user", parts: [{ text: promptText }] },
     ];
-    
+
     const payload = {
       contents: chatHistory,
     };
-    // REMPLACEZ la ligne ci-dessous par votre propre clé API
-    // Vous pouvez obtenir une clé sur Google AI Studio.
-    const apiKey = "AIzaSyDdC3z4axWR3xcD2t9yZaJNirSeSGRO_hY"; 
+    // Note: L'API key est fournie par l'environnement
+    const apiKey = "AIzaSyDdC3z4axWR3xcD2t9yZaJNirSeSGRO_hY";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
     try {
@@ -71,10 +68,10 @@ export default function GroupChatPage() {
         body: JSON.stringify(payload)
       });
       const result = await response.json();
-      
+
       // Récupère le texte de la réponse de l'IA
       const aiResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-      
+
       if (aiResponse) {
         // Crée et ajoute le nouveau message de l'IA à la liste des messages
         const aiMessage: Message = {
@@ -97,41 +94,47 @@ export default function GroupChatPage() {
 
   // Sélectionne l'icône en fonction de l'expéditeur
   const getSenderIcon = (sender: string) => {
-    if (sender === "ia") return <Bot className="w-6 h-6 text-green-500" />;
-    if (sender === "enseignant") return <GraduationCap className="w-6 h-6 text-blue-500" />;
-    return <User className="w-6 h-6 text-gray-500" />;
+    if (sender === "ia") return <Bot className="w-6 h-6 text-green-500 flex-shrink-0" />;
+    if (sender === "enseignant") return <GraduationCap className="w-6 h-6 text-blue-500 flex-shrink-0" />;
+    return <User className="w-6 h-6 text-gray-500 flex-shrink-0" />;
   };
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
-      <div className="p-4 bg-green-600 text-white font-bold">
-      ChatBot
+      <div className="p-4 bg-green-600 text-white font-bold text-center">
+        ChatBot
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg) => (
-          <div key={msg.id} className="flex items-start space-x-2">
-            {getSenderIcon(msg.sender)}
+          <div 
+            key={msg.id} 
+            className={`flex items-start space-x-2 ${
+              msg.sender === "etudiant" ? "justify-end" : "justify-start"
+            }`}
+          >
+            {msg.sender !== "etudiant" && getSenderIcon(msg.sender)}
             <div
               className={`px-4 py-2 rounded-2xl max-w-xs ${
                 msg.sender === "etudiant"
-                  ? "bg-white text-gray-800"
+                  ? "bg-white text-gray-800 rounded-br-none"
                   : msg.sender === "enseignant"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-green-100 text-green-800"
+                  ? "bg-blue-100 text-blue-800 rounded-tl-none"
+                  : "bg-green-100 text-green-800 rounded-tl-none"
               }`}
             >
               {msg.text}
             </div>
+            {msg.sender === "etudiant" && getSenderIcon(msg.sender)}
           </div>
         ))}
         {/* Indicateur de saisie de l'IA */}
         {isTyping && (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 justify-start">
             <Bot className="w-6 h-6 text-green-500 animate-pulse" />
-            <div className="px-4 py-2 rounded-2xl bg-green-100 text-green-800 animate-pulse">
+            <div className="px-4 py-2 rounded-2xl bg-green-100 text-green-800 animate-pulse rounded-tl-none">
               L'IA est en train d'écrire...
             </div>
           </div>
@@ -142,7 +145,7 @@ export default function GroupChatPage() {
       <div className="p-3 bg-white flex items-center border-t">
         <input
           type="text"
-          className="flex-1 border rounded-full px-4 py-2 focus:outline-none"
+          className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
           placeholder="Écrire un message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -151,7 +154,7 @@ export default function GroupChatPage() {
         />
         <button
           onClick={handleSend}
-          className="ml-2 p-2 bg-green-600 rounded-full text-white"
+          className="ml-2 p-3 bg-green-600 rounded-full text-white hover:bg-green-700 transition-colors disabled:bg-gray-400"
           disabled={isTyping}
         >
           <Send className="w-5 h-5" />

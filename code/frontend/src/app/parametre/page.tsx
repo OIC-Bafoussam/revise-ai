@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import Navbar from "@/components/Navbar";
+import { useState, useEffect } from 'react';
+import "@/app/page"
 
 // Composant de la page de réglages
 export default function SettingsPage() {
@@ -10,21 +10,29 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState('Français');
 
+  // Effet pour appliquer ou retirer la classe 'dark' sur le body
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   return (
     <>
-      <Navbar />
-      <div className="bg-gray-100 min-h-screen p-6 md:p-10">
-        <h1 className="text-5xl font-extrabold text-gray-900 mb-12 text-center">
+      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-6 md:p-10 transition-colors duration-300">
+        <h1 className="text-5xl font-extrabold text-gray-900 dark:text-gray-100 mb-12 text-center">
           Réglages
         </h1>
         <div className="max-w-3xl mx-auto space-y-8">
           
           {/* Section Préférences du compte */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Préférences du compte</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">Préférences du compte</h2>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <span className="text-lg font-medium text-gray-700">Activer les notifications</span>
+                <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Activer les notifications</span>
                 <label className="flex items-center cursor-pointer">
                   <div className="relative">
                     <input 
@@ -40,7 +48,7 @@ export default function SettingsPage() {
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-lg font-medium text-gray-700">Mode sombre</span>
+                <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Mode sombre</span>
                 <label className="flex items-center cursor-pointer">
                   <div className="relative">
                     <input 
@@ -56,12 +64,12 @@ export default function SettingsPage() {
               </div>
               
               <div>
-                <label htmlFor="language-select" className="block text-lg font-medium text-gray-700 mb-2">Langue</label>
+                <label htmlFor="language-select" className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Langue</label>
                 <select 
                   id="language-select" 
                   value={language} 
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
                   <option value="Français">Français</option>
                   <option value="Anglais">Anglais</option>
@@ -72,10 +80,10 @@ export default function SettingsPage() {
           </div>
 
           {/* Section Sécurité */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Sécurité</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">Sécurité</h2>
             <div className="space-y-4">
-              <button className="w-full py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors duration-300">
+              <button className="w-full py-3 rounded-lg text-lg font-semibold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
                 Changer de mot de passe
               </button>
               <button className="w-full py-3 rounded-lg text-lg font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors duration-300">

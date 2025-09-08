@@ -1,9 +1,11 @@
 'use client';
+import jsPDF from "jspdf";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Services from "@/components/service";
 import Testimonials from "@/components/Testimonials";
 import CTA from "@/components/CTA";
+import PricingSection from "@/components/PricingSection"
 import Footer from "@/components/Footer";
 import "@/app/globals.css";
 import Features from "@/components/Feature";
@@ -15,13 +17,13 @@ export default function HomePage() {
     <>
       <Navbar />
       <Hero />
+        <ProgressBar/>
       <Services />
-      <ProgressBar/>
       <Testimonials />
       <Features/>
+       <PricingSection/>
       <CTA />
       <Footer />
-    
     
     </>
   );

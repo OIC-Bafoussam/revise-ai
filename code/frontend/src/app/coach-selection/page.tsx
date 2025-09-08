@@ -1,7 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import "@/app/page"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import "@/app/page";
+
+// Interface utilisateur
+interface User {
+  nom: string;
+  prenom: string;
+  email: string;
+  niveau?: string;
+  profession?: string;
+  domaine?: string;
+  avatar?: string | null;
+  coachId?: number;
+}
 
 // Interface pour un objet Coach
 interface Coach {
@@ -19,59 +32,55 @@ const generateColor = (id: number) => {
   return colors[id % colors.length];
 };
 
-/**
- * Composant pour le bouton de retour.
- */
-const BackButton = () => {
-  return (
-    <button
-      onClick={() => window.history.back()}
-      className="absolute top-6 left-6 md:top-10 md:left-10 p-2 rounded-full bg-white text-gray-800 shadow-md transition-colors duration-200 hover:bg-gray-200"
-      aria-label="Retour"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-    </button>
-  );
-};
+/** Bouton de retour */
+const BackButton = () => (
+  <button
+    onClick={() => window.history.back()}
+    className="absolute top-6 left-6 md:top-10 md:left-10 p-2 rounded-full bg-white text-gray-800 shadow-md transition-colors duration-200 hover:bg-gray-200"
+    aria-label="Retour"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+  </button>
+);
 
-/**
- * Composant pour afficher une carte de coach.
- * Gère l'état de "suivi" localement.
- */
-const CoachCard = ({ coach }: { coach: Coach }) => {
-  const [isFollowing, setIsFollowing] = useState(false);
+/** Carte de coach */
+const CoachCard = ({
+  coach,
+  selectedCoachId,
+  onSelect
+}: {
+  coach: Coach;
+  selectedCoachId: number | null;
+  onSelect: (coachId: number) => void;
+}) => {
+  const isSelected = coach.id === selectedCoachId;
 
-  const handleFollowClick = () => {
-    setIsFollowing(!isFollowing);
-    // Dans une application réelle, vous feriez ici un appel API
-    // pour mettre à jour le statut de suivi de l'utilisateur.
-  };
-
-  // Générer les initiales pour l'avatar
   const initials = coach.name.split(' ').map(n => n[0]).join('');
   const avatarColor = generateColor(coach.id);
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200 transition-transform duration-300 hover:scale-105 hover:shadow-2xl flex flex-col items-center text-center">
-      <img 
-        src={`https://placehold.co/96x96/${avatarColor}/ffffff?text=${initials}`} 
-        alt={`Avatar de ${coach.name}`} 
+    <div
+      className={`bg-white rounded-2xl shadow-xl p-8 border border-gray-200 transition-transform duration-300 hover:scale-105 hover:shadow-2xl flex flex-col items-center text-center cursor-pointer
+        ${isSelected ? 'ring-4 ring-blue-400' : ''}
+      `}
+      onClick={() => onSelect(coach.id)}
+    >
+      <img
+        src={`https://placehold.co/96x96/${avatarColor}/ffffff?text=${initials}`}
+        alt={`Avatar de ${coach.name}`}
         className="w-24 h-24 rounded-full object-cover mb-4"
       />
       <h3 className="text-2xl font-bold text-gray-800 mb-1">{coach.name}</h3>
       <p className="text-blue-600 font-semibold mb-2">{coach.subject}</p>
       <p className="text-gray-600 text-sm mb-6 flex-grow">{coach.bio}</p>
       <button
-        onClick={handleFollowClick}
         className={`w-full py-3 rounded-full font-bold text-lg transition-all duration-300 transform
-          ${isFollowing
-            ? 'bg-green-600 text-white shadow-md hover:bg-green-700'
-            : 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
-          }`}
+          ${isSelected ? 'bg-green-600 text-white shadow-md' : 'bg-blue-600 text-white shadow-md hover:bg-blue-700'}
+        `}
       >
-        {isFollowing ? 'Suivi !' : 'Suivre'}
+        {isSelected ? 'Sélectionné' : 'Sélectionner'}
       </button>
     </div>
   );
@@ -79,42 +88,44 @@ const CoachCard = ({ coach }: { coach: Coach }) => {
 
 // Données factices pour les coachs
 const dummyCoaches: Coach[] = [
-  {
-    id: 1,
-    name: 'Mme. Claire Martin',
-    subject: 'Mathématiques & Physique',
-    bio: 'Spécialiste en algèbre, calcul différentiel et physique quantique. Aide à comprendre les concepts complexes avec des exemples simples.',
-  },
-  {
-    id: 2,
-    name: 'M. David Dubois',
-    subject: 'Histoire & Géographie',
-    bio: 'Historien passionné, expert en histoire antique et moderne. Rend l\'apprentissage de l\'histoire captivant et mémorable.',
-  },
-  {
-    id: 3,
-    name: 'Mme. Sarah Lemaitre',
-    subject: 'Littérature & Philosophie',
-    bio: 'Professeure de lettres modernes. Aide à analyser les textes, développer la pensée critique et préparer les dissertations.',
-  },
-  {
-    id: 4,
-    name: 'M. Paul Dupont',
-    subject: 'Informatique & Programmation',
-    bio: 'Développeur expérimenté, se spécialise en algorithmes, structures de données et développement web. Propose un soutien pratique.',
-  },
-  {
-    id: 5,
-    name: 'Mme. Émilie Gauthier',
-    subject: 'Biologie & Chimie',
-    bio: 'Biologiste et chimiste passionnée. Aide les étudiants à maîtriser les concepts du vivant et des réactions chimiques.',
-  },
+  { id: 1, name: 'Mme. Claire Martin', subject: 'UML', bio: 'Spécialiste en UML.' },
+  { id: 2, name: 'M. David Dubois', subject: 'Histoire', bio: 'Expert en histoire antique et moderne.' },
+  { id: 3, name: 'Mme. Sarah Lemaitre', subject: 'Littérature', bio: 'Spécialiste des textes littéraires.' },
+  { id: 4, name: 'M. Paul Dupont', subject: 'Informatique & Programmation', bio: 'Développeur fullstack.' },
+  { id: 5, name: 'Mme. Émilie Gauthier', subject: 'Biologie', bio: 'Passionnée des sciences du vivant.' },
 ];
 
-/**
- * Page principale de sélection des coachs.
- */
+/** Page principale de sélection des coachs */
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedCoachId, setSelectedCoachId] = useState<number | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setCurrentUser(user);
+      setSelectedCoachId(user.coachId || null);
+    } else {
+      router.push('/auth/sign-in');
+    }
+  }, [router]);
+
+  const handleSelectCoach = (coachId: number) => {
+    if (!currentUser) return;
+
+    const updatedUser = { ...currentUser, coachId };
+    setSelectedCoachId(coachId);
+    setCurrentUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+    alert(`Vous avez sélectionné ${dummyCoaches.find(c => c.id === coachId)?.name}`);
+    router.push('/acceuilPage'); // 🔥 Redirection vers l'accueil
+  };
+
+  if (!currentUser) return null;
+
   return (
     <div className="bg-gray-100 min-h-screen p-6 md:p-10 flex items-start justify-center relative">
       <BackButton />
@@ -124,7 +135,12 @@ export default function App() {
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {dummyCoaches.map((coach) => (
-            <CoachCard key={coach.id} coach={coach} />
+            <CoachCard
+              key={coach.id}
+              coach={coach}
+              selectedCoachId={selectedCoachId}
+              onSelect={handleSelectCoach}
+            />
           ))}
         </div>
       </div>
