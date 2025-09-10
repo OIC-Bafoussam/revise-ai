@@ -10,7 +10,6 @@ export default class extends BaseSchema {
       table.increments('id').primary()
       table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE')
       table.integer('group_id').unsigned().references('id').inTable('groups').onDelete('CASCADE')
-      table.enum('role', ['teacher', 'student']).notNullable()
       table.enum('status', ['pending', 'accepted', 'declined']).defaultTo('pending').notNullable()
       table.unique(['user_id', 'group_id'])
       table.timestamp('created_at').notNullable()

@@ -9,6 +9,17 @@ import File from '#models/File' // Importez le modèle File
 import RevisionItem from '#models/revision_item' // Importez le modèle RevisionItem
 import PDFParser from 'pdf2json' // Importez la bibliothèque pdf2json
 
+/**
+ * Type pour les options de personnalisation du résumé.
+ * Les propriétés sont facultatives pour gérer les cas où elles ne sont pas fournies.
+ */
+interface SummaryOptions {
+  length?: 'short' | 'medium' | 'long';
+  tone?: 'professional' | 'casual' | 'academic';
+  keywords?: string[];
+  style?: 'bullet_points' | 'paragraph' | 'numbered_list';
+}
+
 export default class SummaryController {
   /**
    * Génère un résumé à partir d'un fichier uploadé en utilisant l'API Gemini.
@@ -17,7 +28,8 @@ export default class SummaryController {
    */
   async generate({ request, response, auth }: HttpContext) {
     try {
-      const { fileName } = request.only(['fileName'])
+      // MODIFICATION : Utilisation d'une valeur par défaut pour 'summaryOptions'
+      const { fileName, summaryOptions = {} } = request.only(['fileName', 'summaryOptions'])
       const user = auth.user // L'utilisateur authentifié
 
       if (!fileName) {
@@ -43,6 +55,9 @@ export default class SummaryController {
       type GeminiContentPart = string | { text: string } | { inlineData: { data: string, mimeType: string } };
       let aiInput: GeminiContentPart[];
 
+      // NOUVEAU : Construire le prompt de base en fonction des options de personnalisation
+      const basePrompt = this.buildPrompt(summaryOptions);
+
       // 3. Préparer l'entrée de l'IA en fonction du type de fichier
       const imageExtensions = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'svg']; 
 
@@ -55,15 +70,7 @@ export default class SummaryController {
         console.log(`Préparation de l'entrée image pour Gemini (résumé) : ${fileName}, MIME : ${mimeType}`);
         aiInput = [
           // Le prompt textuel est maintenant une chaîne directe
-          `Génère un résumé concis et pertinent à partir de cette image. La réponse doit être au format JSON et inclure un titre pour le résumé.
-          
-          Exemple de format JSON attendu :
-          {
-            "title": "Titre du Résumé (à partir de l'image)",
-            "summaryText": "Ceci est le texte détaillé du résumé..."
-          }
-          
-          Réponse JSON :`,
+          `${basePrompt} à partir de cette image.`,
           { // Directement un objet pour la partie inlineData
             inlineData: { data: base64Image, mimeType: mimeType }
           },
@@ -74,20 +81,10 @@ export default class SummaryController {
         console.log(`Préparation de l'entrée texte pour Gemini (résumé) : ${fileName}. Longueur du contenu : ${fileContent.length}`);
         aiInput = [
           // Le prompt textuel est maintenant une chaîne directe
-          `À partir du texte suivant, génère un résumé concis et pertinent. La réponse doit être au format JSON et inclure un titre pour le résumé.
-          
-          Exemple de format JSON attendu :
-          {
-            "title": "Titre du Résumé",
-            "summaryText": "Ceci est le texte détaillé du résumé..."
-          }
-          
-          Contenu à analyser :
+          `${basePrompt} à partir du texte suivant :
           """
           ${fileContent}
-          """
-          
-          Réponse JSON :`,
+          """`,
         ];
       } else if (fileExtension === 'pdf') {
         // Gérer les fichiers PDF à l'aide de pdf2json
@@ -97,7 +94,6 @@ export default class SummaryController {
         let pdfContent = '';
         await new Promise<void>((resolve, reject) => {
           pdfParser.on('pdfParser_dataReady', (pdfData) => {
-            // pdf2json fournit le texte page par page
             pdfContent = pdfData.Pages.map((page) =>
               page.Texts.map((text) => decodeURIComponent(text.R[0].T)).join(' ')
             ).join('\n');
@@ -119,20 +115,10 @@ export default class SummaryController {
         console.log(`Préparation de l'entrée texte PDF pour Gemini (résumé) : ${fileName}. Longueur du contenu : ${pdfContent.length}`);
         aiInput = [
           {
-            text: `À partir du contenu PDF suivant, génère un résumé concis et pertinent. La réponse doit être au format JSON et inclure un titre pour le résumé.
-          
-          Exemple de format JSON attendu :
-          {
-            "title": "Titre du Résumé",
-            "summaryText": "Ceci est le texte détaillé du résumé..."
-          }
-          
-          Contenu à analyser à partir du PDF :
-          """
-          ${pdfContent}
-          """
-          
-          Réponse JSON :`
+            text: `${basePrompt} à partir du contenu PDF suivant :
+            """
+            ${pdfContent}
+            """`
           },
         ];
       }
@@ -173,6 +159,38 @@ export default class SummaryController {
       console.error('Erreur générale lors de la génération du résumé :', error)
       return response.internalServerError({ message: 'Une erreur est survenue lors de la génération du résumé.' })
     }
+  }
+
+  /**
+   * NOUVELLE MÉTHODE : Construit le prompt de base en fonction des options de l'utilisateur.
+   */
+  private buildPrompt(options: SummaryOptions): string {
+    let prompt = `Génère un résumé concis et pertinent. La réponse doit être au format JSON et inclure un titre pour le résumé.
+    
+    Exemple de format JSON attendu :
+    {
+      "title": "Titre du Résumé (à partir de l'image)",
+      "summaryText": "Ceci est le texte détaillé du résumé..."
+    }
+    
+    Instruction de personnalisation :`;
+
+    if (options.length) {
+      prompt += `\n- La longueur du résumé doit être ${options.length}.`;
+    }
+    if (options.tone) {
+      prompt += `\n- Le ton doit être ${options.tone}.`;
+    }
+    if (options.keywords && options.keywords.length > 0) {
+      prompt += `\n- Inclure les mots-clés suivants: ${options.keywords.join(', ')}.`;
+    }
+    if (options.style) {
+      prompt += `\n- Le format du résumé doit être sous forme de ${options.style}.`;
+    }
+
+    prompt += `\n\nRéponse JSON :`;
+
+    return prompt;
   }
 
   /**

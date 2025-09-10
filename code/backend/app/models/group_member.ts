@@ -12,9 +12,6 @@ export default class GroupMember extends BaseModel {
   declare groupId: Number
 
   @column()
-  declare role: 'teacher' | 'student'
-
-  @column()
   declare status: 'pending' | 'accepted' | 'declined'
 
   @column.dateTime({ autoCreate: true })
