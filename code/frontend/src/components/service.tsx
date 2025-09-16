@@ -65,7 +65,7 @@ const Services: React.FC = () => (
           title="Quiz intelligent"
           description="Passez des quiz dynamiques et adaptés à votre progression."
           icon={HelpCircle}
-          avatar="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face&auto=format&q=80"
+          avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face&auto=format&q=80"
         />
         <Card
           title="Suivi de progression"

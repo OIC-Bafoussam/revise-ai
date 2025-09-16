@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from "react";
-import "@/app/page";
+import "@/app/page"
 
 // Définir un type pour l'utilisateur pour éviter les erreurs TypeScript
 type User = {
@@ -10,7 +10,7 @@ type User = {
   password: string;
 };
 
-export default function RegisterPage() {
+export default function App() {
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,28 +68,80 @@ export default function RegisterPage() {
               <span className="text-6xl text-white">✨</span>
             </div>
           </div>
+          
 
           {/* Formulaire */}
           <div className="flex-1 p-10 flex flex-col justify-center items-center">
             <h1 className="text-3xl font-bold mb-5 text-gray-800">Créer un compte</h1>
             
+            {/* Connexion via les réseaux sociaux */}
+            <div className="flex justify-center gap-4 mb-5">
+              <a href="https://www.facebook.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+                <img src="/facebook.svg" alt="Facebook" className="w-full h-full" />
+              </a>
+              <a href="https://twitter.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+                <img src="/twiter.svg" alt="Twitter" className="w-full h-full" />
+              </a>
+              <a href="https://www.google.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+                <img src="/google.svg" alt="Google" className="w-full h-full" />
+              </a>
+              <a href="https://www.linkedin.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+                <img src="/linkdlin.svg" alt="LinkedIn" className="w-full h-full" />
+              </a>
+            </div>
+
+            <div className="w-full text-center border-b border-gray-300 leading-none my-5">
+              <span className="bg-white px-2 text-gray-500 text-sm">
+                ou utilisez votre email pour vous inscrire
+              </span>
+            </div>
+            
             <form onSubmit={handleRegister} className="flex flex-col w-full gap-5">
-              <input 
-                type="text" placeholder="Nom" value={nom} onChange={(e) => setNom(e.target.value)} required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
-              />
-              <input 
-                type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
-              />
-              <input 
-                type="password" placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
-              />
-              <input 
-                type="password" placeholder="Confirmer le mot de passe" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
-              />
+              <div className="relative w-full">
+                <input 
+                  type="text" 
+                  placeholder="Nom" 
+                  value={nom} 
+                  onChange={(e) => setNom(e.target.value)} 
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
+                />
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">👤</span>
+              </div>
+              <div className="relative w-full">
+                <input 
+                  type="email" 
+                  placeholder="Email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
+                />
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">📧</span>
+              </div>
+              <div className="relative w-full">
+                <input 
+                  type="password" 
+                  placeholder="Mot de passe" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
+                />
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
+              </div>
+              <div className="relative w-full">
+                <input 
+                  type="password" 
+                  placeholder="Confirmer le mot de passe" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base outline-none focus:border-blue-500" 
+                />
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
+              </div>
+              
               <button 
                 type="submit" 
                 className={`py-4 bg-[#00009b] text-white rounded-full text-lg font-bold transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#00004b]'}`}

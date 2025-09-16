@@ -86,19 +86,19 @@ export default function App() {
         <nav className="flex-1">
           <ul>
             <li className="mb-4">
-              <a href="#" className="flex items-center p-3 rounded-xl hover:bg-gray-700 transition-colors duration-200">
+              <a href="/Dashboard" className="flex items-center p-3 rounded-xl hover:bg-gray-700 transition-colors duration-200">
                 <LayoutDashboard size={20} className="mr-4" />
                 Tableau de bord
               </a>
             </li>
             <li className="mb-4">
-              <a href="#" className="flex items-center p-3 rounded-xl hover:bg-gray-700 transition-colors duration-200">
+              <a href="/coach-registration" className="flex items-center p-3 rounded-xl hover:bg-gray-700 transition-colors duration-200">
                 <User size={20} className="mr-4" />
                 Profil
               </a>
             </li>
             <li className="mb-4">
-              <a href="#" className="flex items-center p-3 rounded-xl hover:bg-gray-700 transition-colors duration-200">
+              <a href="parametre" className="flex items-center p-3 rounded-xl hover:bg-gray-700 transition-colors duration-200">
                 <Settings size={20} className="mr-4" />
                 Paramètres
               </a>
@@ -192,3 +192,4 @@ export default function App() {
     </div>
   );
 }
+ 

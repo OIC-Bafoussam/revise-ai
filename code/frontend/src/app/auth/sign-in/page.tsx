@@ -60,16 +60,16 @@ export default function Home() {
             
             {/* Connexion via les réseaux sociaux */}
             <div className="flex justify-center gap-4 mb-5">
-              <a href="#" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+              <a href="https://www.facebook.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
                 <img src="/facebook.svg" alt="Facebook" className="w-full h-full" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+              <a href="https://twitter.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
                 <img src="/twiter.svg" alt="Twitter" className="w-full h-full" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+              <a href="https://www.google.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
                 <img src="/google.svg" alt="Google" className="w-full h-full" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
+              <a href="https://www.linkedin.com/" className="w-10 h-10 rounded-full shadow-md transition-transform duration-200 hover:scale-110">
                 <img src="/linkdlin.svg" alt="LinkedIn" className="w-full h-full" />
               </a>
             </div>

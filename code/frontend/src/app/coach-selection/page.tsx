@@ -96,10 +96,10 @@ const dummyCoaches: Coach[] = [
 ];
 
 /** Page principale de sélection des coachs */
-export default function App() {
+export default function CoachSelectionPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedCoachId, setSelectedCoachId] = useState<number | null>(null);
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
@@ -108,31 +108,89 @@ export default function App() {
       setCurrentUser(user);
       setSelectedCoachId(user.coachId || null);
     } else {
-      router.push('/auth/sign-in');
+      // Redirection vers la page de connexion si non connecté
+      window.location.href = '/auth/sign-in';
+      return;
     }
-  }, [router]);
+    setIsLoading(false);
+  }, []);
 
   const handleSelectCoach = (coachId: number) => {
     if (!currentUser) return;
 
+    // Mettre à jour temporairement l'utilisateur avec l'ID du coach
     const updatedUser = { ...currentUser, coachId };
     setSelectedCoachId(coachId);
     setCurrentUser(updatedUser);
     localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
-    alert(`Vous avez sélectionné ${dummyCoaches.find(c => c.id === coachId)?.name}`);
-    router.push('/acceuilPage'); // 🔥 Redirection vers l'accueil
+    // Redirection vers la page d'enregistrement au lieu de l'accueil
+    setTimeout(() => {
+      window.location.href = '/coach-registration';
+    }, 500);
   };
 
-  if (!currentUser) return null;
+  if (isLoading) {
+    return (
+      <div className="bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Accès restreint</h2>
+          <p className="text-gray-600 mb-6">Vous devez être connecté pour sélectionner un coach.</p>
+          <button
+            onClick={() => window.location.href = "/auth/sign-in"}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+          >
+            Se connecter
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen p-6 md:p-10 flex items-start justify-center relative">
       <BackButton />
       <div className="w-full max-w-6xl mx-auto">
-        <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-12 text-center">
-          Choisissez votre Coach
-        </h1>
+        {/* Header avec informations utilisateur */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">
+            Choisissez votre Coach
+          </h1>
+          <div className="bg-white rounded-2xl p-4 shadow-md inline-block">
+            <p className="text-gray-600 mb-1">
+              Bienvenue, <span className="font-semibold text-gray-800">
+                {currentUser.prenom && currentUser.nom 
+                  ? `${currentUser.prenom} ${currentUser.nom}` 
+                  : currentUser.email}
+              </span>
+            </p>
+            <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+              {currentUser.niveau && (
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  {currentUser.niveau}
+                </span>
+              )}
+              {currentUser.domaine && (
+                <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                  {currentUser.domaine}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Grille des coachs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {dummyCoaches.map((coach) => (
             <CoachCard
@@ -142,6 +200,33 @@ export default function App() {
               onSelect={handleSelectCoach}
             />
           ))}
+        </div>
+
+        {/* Instructions */}
+        <div className="mt-12 text-center">
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 max-w-3xl mx-auto">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              Comment choisir le bon coach ?
+            </h3>
+            <p className="text-blue-700 text-sm mb-4">
+              Sélectionnez le coach qui correspond le mieux à vos besoins d'apprentissage. 
+              Chaque coach a ses spécialités et pourra vous accompagner dans votre parcours.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-xs">
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Accompagnement personnalisé</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-full">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Suivi en temps réel</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-full">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Ressources adaptées</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

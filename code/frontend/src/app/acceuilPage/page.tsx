@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import '@/app/page';
 
 // ===================
@@ -19,7 +19,10 @@ const HomePage = () => (
         Votre compagnon d'étude intelligent pour transformer vos documents en fiches et quiz interactifs.
       </p>
       <div className="flex flex-col sm:flex-row justify-center space-y-6 sm:space-y-0 sm:space-x-8">
-        <Link href="/upload" className="py-5 px-10 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
+        <Link
+          href="/upload"
+          className="py-5 px-10 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105"
+        >
           Uploader un Fichier
         </Link>
       </div>
@@ -59,21 +62,16 @@ interface NavbarProps {
 }
 
 const Navbar = ({ activeLink, onNavClick }: NavbarProps) => {
+  const pathname = usePathname();
   const navLinks = [
-    { href: '/acceuilPage', label: 'Accueil' },
+    { href: '/acceuilPage', label: 'Accueil  ✅' },
+     { href: '/Dashboard', label: 'dashboard' },
     { href: '/upload', label: 'Uploader' },
-    { href: '/profile', label: 'Profil' },
     { href: '/parametre', label: 'Réglages' },
     { href: '/pageDaide', label: 'Aide' },
-    { href: '/groupe', label: 'acceder a un groupe ' },
-
-
-
-
+    { href: '/groupe', label: 'groupe' },
     { href: '/auth/logout', label: 'Déconnexion' },
   ];
-
-  const pathname = usePathname();
 
   return (
     <nav className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col p-6 shadow-lg">
@@ -107,31 +105,33 @@ const Navbar = ({ activeLink, onNavClick }: NavbarProps) => {
 // ===================
 export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setCurrentUser(JSON.parse(storedUser));
-    else window.location.href = '/auth/sign-in';
-  }, []);
+    else router.push('/auth/sign-in');
+  }, [router]);
 
   const handleNavClick = (href: string) => {
-    window.history.pushState({}, '', href);
+    router.push(href);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(null);
-    window.location.href = '/auth/sign-in';
+    router.push('/auth/sign-in');
   };
 
   const handleCancelLogout = () => {
-    window.history.pushState({}, '', '/acceuilPage');
+    router.push('/acceuilPage');
   };
 
   return (
     <div className="flex flex-row bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
-      <Navbar activeLink={window.location.pathname} onNavClick={handleNavClick} />
-      {window.location.pathname === '/logout' ? (
+      <Navbar activeLink={pathname || ''} onNavClick={handleNavClick} />
+      {pathname === '/auth/logout' ? (
         <LogoutPage onLogout={handleLogout} onCancel={handleCancelLogout} />
       ) : (
         <HomePage />
