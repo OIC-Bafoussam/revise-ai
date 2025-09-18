@@ -1,6 +1,6 @@
 {
   "extends": "@adonisjs/tsconfig/tsconfig.app.json",
-   "compilerOptions": {
+  "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -13,15 +13,21 @@
       "#models/*": ["app/models/*"],
       "#validators/*": ["app/validators/*"],
       "#exceptions/*": ["app/exceptions/*"],
-      "@ioc:Adonis/Core/*": ["node_modules/@adonisjs/core/build/*"],
-      "@ioc:Adonis/Lucid/*": ["node_modules/@adonisjs/lucid/build/src/*"],
-      "#services/*": ["app/services"],
-      "@ioc:*": ["./.adonisrc.json"]
+      "#services/*": ["app/services"]
     },
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["app", "start", "config", "database", "contracts"],
-  "exclude": ["node_modules", "build"]
+  "include": [
+    "app",
+    "start",
+    "config",
+    "database",
+    "contracts"
+  ],
+  "exclude": [
+    "node_modules",
+    "build"
+  ]
 }

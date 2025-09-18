@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import AuthController from '#controllers/Http/auth_controller'
+import PasswordResetController from '#controllers/Http/PasswordResetController' // <-- Contrôleur unique maintenant
 import UploadsController from '#controllers/Http/UploadsController'
 import QuizController from '#controllers/Http/QuizController'
 import SummaryController from '#controllers/Http/SummaryController'
@@ -27,11 +28,18 @@ router.get('/', async () => {
 router.group(() => {
   router.post('/register', [AuthController, 'register'])
   router.post('/login', [AuthController, 'login'])
-  // router.post('/logout', [AuthController, 'logout']).use(['auth'])
+  
   router.get('/me', [AuthController, "me"]).use(middleware.auth({
     guards: ["api"]
   }))
 }).prefix('/api/auth');
+
+// Groupe de réinitialisation du mot de passe
+router.group(() => {
+  // Les deux routes pointent maintenant vers le même contrôleur.
+  router.post('/forgot-password', [PasswordResetController, 'forgotPassword'])
+  router.post('/reset-password', [PasswordResetController, 'resetPassword'])
+}).prefix('/api/password-reset');
 
 // Route upload protégée
 router.post('/api/file/upload', [UploadsController,'store'])
