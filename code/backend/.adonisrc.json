@@ -1,8 +1,0 @@
-{
-  "typescript": true,
-  "autoloads": {},
-  "metaFiles": [],
-  "alias": {
-    "@ioc:Adonis/Core/Application": ["node_modules/@adonisjs/core/build/standalone"]
-  }
-}

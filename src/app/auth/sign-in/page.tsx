@@ -1,30 +1,43 @@
 'use client';
-import "@/app/page"
 import { useState } from "react";
+import "@/app/page"
 
-// Composant de la page de connexion
-export default function Home() {
+// Page de connexion
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Fonction de connexion
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    try {
+      const res = await fetch("http://10.35.82.53:3333/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Vérifier les identifiants
-    const user = users.find((u: any) => u.email === email && u.password === password);
+      const data = await res.json();
 
-    if (user) {
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      setMessage("✅ Connexion réussie !");
-      // Exemple de redirection locale
-      setTimeout(() => {
-        window.location.href = "/profileSetup"; 
-      }, 1000);
-    } else {
-      setMessage("❌ Email ou mot de passe incorrect.");
+      if (res.ok && data.status === "success") {
+        // Sauvegarde du token et utilisateur
+        localStorage.setItem("token", data.token.token);
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+        setMessage("✅ Connexion réussie !");
+        setTimeout(() => {
+          window.location.href = "/profileSetup";
+        }, 1000);
+      } else {
+        setMessage("❌ " + data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage("⚠️ Erreur de connexion au serveur.");
     }
   };
 

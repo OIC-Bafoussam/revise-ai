@@ -3,14 +3,14 @@
 import React, { useState } from "react";
 import "@/app/page"
 
-// Définir un type pour l'utilisateur pour éviter les erreurs TypeScript
+// Définir un type pour l'utilisateur
 type User = {
   nom: string;
   email: string;
   password: string;
 };
 
-export default function App() {
+export default function RegisterPage() {
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,9 +18,9 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage(""); // Réinitialiser le message
+    setMessage("");
     setIsLoading(true);
 
     if (password !== confirmPassword) {
@@ -29,29 +29,34 @@ export default function App() {
       return;
     }
 
-    const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
+    try {
+      // Ici on utilise le proxy Next.js → pas besoin d’IP
+     const res = await fetch("http://10.35.82.53:3333/api/auth/register", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ nom, email, password }),
+});
 
-    if (users.find((u: User) => u.email === email)) {
-      setMessage("❌ Cet email est déjà utilisé.");
-      setIsLoading(false);
-      return;
+      const data = await res.json();
+
+      if (res.ok && data.status === "success") {
+        setMessage("✅ Compte créé avec succès ! Redirection en cours...");
+        setNom("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+
+        setTimeout(() => {
+          window.location.href = `/profileSetup?email=${encodeURIComponent(email)}`;
+        }, 1500);
+      } else {
+        setMessage("❌ " + (data.message || "Erreur inconnue."));
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage("⚠️ Erreur de connexion au serveur.");
     }
 
-    // Créer un nouvel utilisateur avec le nom, l'email et le mot de passe
-    users.push({ nom, email, password });
-    localStorage.setItem("users", JSON.stringify(users));
-
-    setMessage("✅ Compte créé avec succès ! Redirection en cours...");
-    setNom("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-
-    // Redirection vers la page de configuration du profil
-    setTimeout(() => {
-      window.location.href = `/profileSetup?email=${encodeURIComponent(email)}`;
-    }, 1500);
-    
     setIsLoading(false);
   };
 
@@ -69,7 +74,6 @@ export default function App() {
             </div>
           </div>
           
-
           {/* Formulaire */}
           <div className="flex-1 p-10 flex flex-col justify-center items-center">
             <h1 className="text-3xl font-bold mb-5 text-gray-800">Créer un compte</h1>

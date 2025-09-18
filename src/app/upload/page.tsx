@@ -13,7 +13,12 @@ import {
   File,
   BarChart3,
   Brain,
-  UploadCloud
+  UploadCloud,
+  CreditCard,
+  ArrowLeft,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import "@/app/page"
 
@@ -36,14 +41,22 @@ interface UploadedFile {
 interface UserStats {
   quizzesCompleted: number;
   fichesGenerated: number;
+  flashcardsGenerated: number;
   averageQuizScore: number;
   generatedContent: string;
+}
+
+interface Flashcard {
+  id: number;
+  front: string;
+  back: string;
+  difficulty: 'facile' | 'moyen' | 'difficile';
 }
 
 const ChatFichier = () => {
   // Gestion de l'état local
   const [messages, setMessages] = useState<Message[]>([
-    { sender: 'coach', text: 'Salut 👋, je suis ton coach de révision  !', timestamp: new Date() }
+    { sender: 'coach', text: 'Salut 👋, je suis ton coach de révision !', timestamp: new Date() }
   ]);
   const [input, setInput] = useState<string>('');
   const [file, setFile] = useState<UploadedFile | null>(null);
@@ -52,9 +65,16 @@ const ChatFichier = () => {
   const [userStats, setUserStats] = useState<UserStats>({
     quizzesCompleted: 0,
     fichesGenerated: 0,
+    flashcardsGenerated: 0,
     averageQuizScore: 0,
     generatedContent: ''
   });
+
+  // États pour les flashcards
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState<number>(0);
+  const [showFlashcardViewer, setShowFlashcardViewer] = useState<boolean>(false);
+  const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
   // Convertit le fichier en une chaîne Base64 pour l'envoyer à Gemini
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -113,13 +133,13 @@ const ChatFichier = () => {
       const data = await response.json();
       
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        throw new Error('Réponse  invalide');
+        throw new Error('Réponse invalide');
       }
 
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
-      console.error('Erreur revise API:', error);
-      throw new Error("Désolé, j'ai rencontré une erreur avec l'API . Veuillez réessayer.");
+      console.error('Erreur API:', error);
+      throw new Error("Désolé, j'ai rencontré une erreur avec l'API. Veuillez réessayer.");
     }
   };
 
@@ -190,7 +210,7 @@ const ChatFichier = () => {
       setTimeout(() => {
         setMessages(prev => [...prev, {
           sender: 'coach',
-          text: `Super ! J'ai bien reçu ton fichier "${uploadedFile.name}". Je suis maintenant prêt à l'analyser. Que souhaites-tu faire ? Générer un résumé ou un quiz ? 🎓`,
+          text: `Super ! J'ai bien reçu ton fichier "${uploadedFile.name}". Je suis maintenant prêt à l'analyser. Que souhaites-tu faire ? Générer un résumé, un quiz ou des flashcards ? 🎓`,
           timestamp: new Date()
         }]);
       }, 1000);
@@ -204,7 +224,62 @@ const ChatFichier = () => {
     }
   };
 
-  const genererContenuIA = async (type: 'resume' | 'quiz'): Promise<void> => {
+  const parseFlashcardsFromResponse = (response: string): Flashcard[] => {
+    const flashcards: Flashcard[] = [];
+    const lines = response.split('\n');
+    let currentFlashcard: Partial<Flashcard> = {};
+    let id = 1;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Détection du début d'une nouvelle flashcard
+      if (line.toLowerCase().includes('question') || line.toLowerCase().includes('recto') || line.startsWith('**Q') || line.match(/^\d+\./)) {
+        if (currentFlashcard.front && currentFlashcard.back) {
+          flashcards.push({
+            id: id++,
+            front: currentFlashcard.front,
+            back: currentFlashcard.back,
+            difficulty: currentFlashcard.difficulty || 'moyen'
+          });
+        }
+        currentFlashcard = {
+          front: line.replace(/^\d+\./, '').replace(/\*\*/g, '').replace(/Question:|Recto:|Q\d+:/i, '').trim()
+        };
+      }
+      // Détection de la réponse
+      else if (line.toLowerCase().includes('réponse') || line.toLowerCase().includes('verso') || line.startsWith('**R') || line.startsWith('R:')) {
+        currentFlashcard.back = line.replace(/\*\*/g, '').replace(/Réponse:|Verso:|R\d*:/i, '').trim();
+      }
+      // Détection de la difficulté
+      else if (line.toLowerCase().includes('difficulté') || line.toLowerCase().includes('niveau')) {
+        const difficulty = line.toLowerCase().includes('facile') ? 'facile' : 
+                          line.toLowerCase().includes('difficile') ? 'difficile' : 'moyen';
+        currentFlashcard.difficulty = difficulty;
+      }
+      // Si c'est du contenu supplémentaire pour la question ou la réponse
+      else if (line && !line.startsWith('#') && !line.startsWith('*') && currentFlashcard.front && !currentFlashcard.back) {
+        currentFlashcard.front += ' ' + line;
+      }
+      else if (line && !line.startsWith('#') && !line.startsWith('*') && currentFlashcard.back) {
+        currentFlashcard.back += ' ' + line;
+      }
+    }
+
+    // Ajouter la dernière flashcard si elle existe
+    if (currentFlashcard.front && currentFlashcard.back) {
+      flashcards.push({
+        id: id++,
+        front: currentFlashcard.front,
+        back: currentFlashcard.back,
+        difficulty: currentFlashcard.difficulty || 'moyen'
+      });
+    }
+
+    return flashcards;
+  };
+
+  const genererContenuIA = async (type: 'resume' | 'quiz' | 'flashcards'): Promise<void> => {
     if (!file) {
       setMessages(prev => [...prev, {
         sender: 'coach',
@@ -217,45 +292,116 @@ const ChatFichier = () => {
     setIsLoading(true);
     
     try {
-      const systemMessage = type === 'resume' 
-        ? `Tu es Gemini AI, expert en création de résumés académiques. Crée un résumé structuré, intelligent et optimisé pour l'apprentissage étudiant avec des sections claires et des emojis pour la lisibilité.`
-        : `Tu es Gemini AI, expert en création de quiz éducatifs. Crée un quiz engageant avec des questions pertinentes, des explications détaillées et des métadonnées d'apprentissage.`;
-      
-      const prompt = type === 'resume'
-        ? `Crée un résumé intelligent et structuré en te basant sur le contenu du fichier. Le résumé doit inclure :\n📚 Points clés identifiés\n💡 Synthèse intelligente\n🚀 Stratégie de révision\n⚡ Points critiques pour l'examen`
-        : `Crée un quiz interactif basé sur le contenu du fichier. Le quiz doit inclure :\n🧠 Questions de compréhension\n🎯 Réponses avec explications\n⏱️ Temps estimé\n📊 Niveau de difficulté`;
+      let systemMessage = '';
+      let prompt = '';
+
+      switch (type) {
+        case 'resume':
+          systemMessage = `Tu es Gemini AI, expert en création de résumés académiques. Crée un résumé structuré, intelligent et optimisé pour l'apprentissage étudiant avec des sections claires et des emojis pour la lisibilité.`;
+          prompt = `Crée un résumé intelligent et structuré en te basant sur le contenu du fichier. Le résumé doit inclure :\n📚 Points clés identifiés\n💡 Synthèse intelligente\n🚀 Stratégie de révision\n⚡ Points critiques pour l'examen`;
+          break;
+        case 'quiz':
+          systemMessage = `Tu es Gemini AI, expert en création de quiz éducatifs. Crée un quiz engageant avec des questions pertinentes, des explications détaillées et des métadonnées d'apprentissage.`;
+          prompt = `Crée un quiz interactif basé sur le contenu du fichier. Le quiz doit inclure :\n🧠 Questions de compréhension\n🎯 Réponses avec explications\n⏱️ Temps estimé\n📊 Niveau de difficulté`;
+          break;
+        case 'flashcards':
+          systemMessage = `Tu es Gemini AI, expert en création de flashcards éducatives. Crée des flashcards optimisées pour la mémorisation et la révision active.`;
+          prompt = `Crée 8-12 flashcards basées sur le contenu du fichier. Pour chaque flashcard, utilise ce format exact :
+          
+**Question 1:** [Question courte et précise]
+**Réponse 1:** [Réponse complète avec explications]
+**Difficulté:** [facile/moyen/difficile]
+
+**Question 2:** [Question courte et précise]
+**Réponse 2:** [Réponse complète avec explications]
+**Difficulté:** [facile/moyen/difficile]
+
+Continue ainsi pour toutes les flashcards. Les questions doivent être concises et les réponses détaillées pour favoriser l'apprentissage.`;
+          break;
+      }
 
       const response = await callGeminiAPI(prompt, systemMessage, file);
       
-      const actionText = type === 'resume' ? 'résumé' : 'quiz';
-      setMessages(prev => [...prev, {
-        sender: 'coach',
-        text: `🎉 Voici ton ${actionText} généré par Coach AI :\n\n${response}`, 
-        timestamp: new Date()
-      }]);
+      if (type === 'flashcards') {
+        const generatedFlashcards = parseFlashcardsFromResponse(response);
+        if (generatedFlashcards.length > 0) {
+          setFlashcards(generatedFlashcards);
+          setMessages(prev => [...prev, {
+            sender: 'coach',
+            text: `🎉 J'ai généré ${generatedFlashcards.length} flashcards pour toi ! Tu peux maintenant les réviser en mode interactif. Clique sur "Réviser les Flashcards" pour commencer ! 🚀`,
+            timestamp: new Date()
+          }]);
+        } else {
+          setMessages(prev => [...prev, {
+            sender: 'coach',
+            text: `🎉 Voici tes flashcards générées :\n\n${response}\n\n💡 Astuce : Utilise ces flashcards pour réviser efficacement !`,
+            timestamp: new Date()
+          }]);
+        }
+      } else {
+        const actionText = type === 'resume' ? 'résumé' : 'quiz';
+        setMessages(prev => [...prev, {
+          sender: 'coach',
+          text: `🎉 Voici ton ${actionText} généré par Coach AI :\n\n${response}`, 
+          timestamp: new Date()
+        }]);
+      }
       
       // Met à jour les stats utilisateur dans l'état local
       setUserStats(prev => ({
         ...prev,
         quizzesCompleted: prev.quizzesCompleted + (type === 'quiz' ? 1 : 0),
         fichesGenerated: prev.fichesGenerated + (type === 'resume' ? 1 : 0),
+        flashcardsGenerated: prev.flashcardsGenerated + (type === 'flashcards' ? 1 : 0),
         generatedContent: response
       }));
       
       // Ajoute à l'historique dans l'état local
-      setHistory(prev => [`${type === 'resume' ? 'Résumé' : 'Quiz'} - ${file.name}`, ...prev.slice(0, 9)]);
+      const actionName = type === 'resume' ? 'Résumé' : type === 'quiz' ? 'Quiz' : 'Flashcards';
+      setHistory(prev => [`${actionName} - ${file.name}`, ...prev.slice(0, 9)]);
       
     } catch (error) {
       console.error('Erreur génération:', error);
-      const actionText = type === 'resume' ? 'résumé' : 'quiz';
+      const actionText = type === 'resume' ? 'résumé' : type === 'quiz' ? 'quiz' : 'flashcards';
       setMessages(prev => [...prev, {
         sender: 'coach',
-        text: `❌ Erreur lors de la génération du ${actionText}. Veuillez réessayer.`,
+        text: `❌ Erreur lors de la génération ${actionText === 'flashcards' ? 'des' : 'du'} ${actionText}. Veuillez réessayer.`,
         timestamp: new Date()
       }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const ouvrirFlashcardsViewer = (): void => {
+    if (flashcards.length > 0) {
+      setShowFlashcardViewer(true);
+      setCurrentFlashcardIndex(0);
+      setIsFlipped(false);
+    }
+  };
+
+  const fermerFlashcardsViewer = (): void => {
+    setShowFlashcardViewer(false);
+    setIsFlipped(false);
+  };
+
+  const flashcardSuivante = (): void => {
+    if (currentFlashcardIndex < flashcards.length - 1) {
+      setCurrentFlashcardIndex(prev => prev + 1);
+      setIsFlipped(false);
+    }
+  };
+
+  const flashcardPrecedente = (): void => {
+    if (currentFlashcardIndex > 0) {
+      setCurrentFlashcardIndex(prev => prev - 1);
+      setIsFlipped(false);
+    }
+  };
+
+  const retournerFlashcard = (): void => {
+    setIsFlipped(!isFlipped);
   };
 
   const nouvelleSession = (): void => {
@@ -265,9 +411,12 @@ const ChatFichier = () => {
     setFile(null);
     setInput('');
     setHistory([]);
+    setFlashcards([]);
+    setShowFlashcardViewer(false);
     setUserStats({
       quizzesCompleted: 0,
       fichesGenerated: 0,
+      flashcardsGenerated: 0,
       averageQuizScore: 0,
       generatedContent: ''
     });
@@ -275,6 +424,8 @@ const ChatFichier = () => {
 
   const supprimerFichier = (): void => {
     setFile(null);
+    setFlashcards([]);
+    setShowFlashcardViewer(false);
     setMessages(prev => [...prev, {
       sender: 'coach',
       text: 'Fichier supprimé ! Tu peux en uploader un nouveau quand tu veux 📂',
@@ -288,6 +439,123 @@ const ChatFichier = () => {
       envoyerMessage();
     }
   };
+
+  // Vue du visualiseur de flashcards
+  if (showFlashcardViewer) {
+    const currentFlashcard = flashcards[currentFlashcardIndex];
+    const difficultyColors = {
+      facile: 'bg-green-100 text-green-700 border-green-200',
+      moyen: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      difficile: 'bg-red-100 text-red-700 border-red-200'
+    };
+
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          {/* Header du visualiseur */}
+          <div className="w-full max-w-2xl mb-8 flex justify-between items-center">
+            <button
+              onClick={fermerFlashcardsViewer}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition-all duration-200 shadow-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour au chat
+            </button>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Révision Flashcards</h2>
+              <p className="text-gray-600">
+                Carte {currentFlashcardIndex + 1} sur {flashcards.length}
+              </p>
+            </div>
+            <div className="w-32"></div>
+          </div>
+
+          {/* Flashcard */}
+          <div className="w-full max-w-2xl h-80 mb-8">
+            <div 
+              className={`w-full h-full relative cursor-pointer transition-transform duration-500 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}
+              onClick={retournerFlashcard}
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* Face avant */}
+              <div className={`absolute inset-0 w-full h-full bg-white rounded-2xl shadow-xl border-2 border-blue-200 flex flex-col justify-center items-center p-8 backface-hidden ${isFlipped ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="text-center">
+                  <div className="text-sm text-gray-500 mb-4">QUESTION</div>
+                  <div className="text-xl font-medium text-gray-800 leading-relaxed">
+                    {currentFlashcard.front}
+                  </div>
+                  <div className="mt-6 text-sm text-gray-400">
+                    Cliquez pour voir la réponse
+                  </div>
+                </div>
+                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium border ${difficultyColors[currentFlashcard.difficulty]}`}>
+                  {currentFlashcard.difficulty}
+                </div>
+              </div>
+
+              {/* Face arrière */}
+              <div className={`absolute inset-0 w-full h-full bg-blue-50 rounded-2xl shadow-xl border-2 border-blue-300 flex flex-col justify-center items-center p-8 ${!isFlipped ? 'opacity-0' : 'opacity-100'}`}
+                   style={{ transform: 'rotateY(180deg)' }}>
+                <div className="text-center">
+                  <div className="text-sm text-blue-600 mb-4">RÉPONSE</div>
+                  <div className="text-lg text-gray-800 leading-relaxed">
+                    {currentFlashcard.back}
+                  </div>
+                  <div className="mt-6 text-sm text-gray-400">
+                    Cliquez pour retourner la carte
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contrôles de navigation */}
+          <div className="flex items-center gap-6">
+            <button
+              onClick={flashcardPrecedente}
+              disabled={currentFlashcardIndex === 0}
+              className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Précédente
+            </button>
+
+            <button
+              onClick={retournerFlashcard}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md"
+            >
+              <RotateCcw className="w-5 h-5" />
+              Retourner
+            </button>
+
+            <button
+              onClick={flashcardSuivante}
+              disabled={currentFlashcardIndex === flashcards.length - 1}
+              className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+            >
+              Suivante
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Indicateur de progression */}
+          <div className="w-full max-w-2xl mt-8">
+            <div className="bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((currentFlashcardIndex + 1) / flashcards.length) * 100}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-2">
+              <span>Début</span>
+              <span>{Math.round(((currentFlashcardIndex + 1) / flashcards.length) * 100)}% complété</span>
+              <span>Fin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans antialiased">
@@ -323,6 +591,12 @@ const ChatFichier = () => {
               <span className="text-gray-600">Résumés créés:</span>
               <span className="font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full text-xs">
                 {userStats.fichesGenerated}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
+              <span className="text-gray-600">Flashcards créées:</span>
+              <span className="font-semibold text-purple-600 bg-purple-100 px-2 py-1 rounded-full text-xs">
+                {userStats.flashcardsGenerated}
               </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
@@ -408,6 +682,26 @@ const ChatFichier = () => {
               <HelpCircle className="w-5 h-5" />
               Générer Quiz
             </button>
+
+            <button
+              onClick={() => genererContenuIA('flashcards')}
+              disabled={!file || isLoading}
+              className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 font-medium"
+            >
+              {isLoading && <Clock className="w-5 h-5 animate-spin" />}
+              <CreditCard className="w-5 h-5" />
+              Générer Flashcards
+            </button>
+
+            {flashcards.length > 0 && (
+              <button
+                onClick={ouvrirFlashcardsViewer}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 font-medium"
+              >
+                <CreditCard className="w-5 h-5" />
+                Réviser les Flashcards
+              </button>
+            )}
           </div>
         </header>
 
@@ -455,7 +749,7 @@ const ChatFichier = () => {
                   <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" />
                   <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
                   <div className="w-3 h-3 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                  <span className="text-sm text-gray-600 ml-3 font-medium">`` réfléchit...</span>
+                  <span className="text-sm text-gray-600 ml-3 font-medium">Coach IA réfléchit...</span>
                 </div>
               </div>
             </div>
@@ -476,8 +770,13 @@ const ChatFichier = () => {
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-gray-600">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                     <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                      ✓ Prêt pour Coach ia 
+                      ✓ Prêt pour Coach IA 
                     </span>
+                    {flashcards.length > 0 && (
+                      <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
+                        {flashcards.length} flashcards disponibles
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
